@@ -9,6 +9,8 @@ class Courses extends Model {
   public thumbnail?: string;
   public status?: boolean;
   public description?: string;
+  public rate?: number;
+  public tileanchia?: number;
 }
 //nếu không đặt khóa chính nó sẽ tự sinh id
 Courses.init({
@@ -44,6 +46,16 @@ Courses.init({
   },
   description:{
     type: DataTypes.TEXT,
+    allowNull: true,  //cho phép giá trị có thể null
+  },
+  rate: {
+    type: DataTypes.DECIMAL,
+    defaultValue: 0,
+    allowNull: true,  //cho phép giá trị có thể null
+  },
+  tileanchia: {
+    type: DataTypes.DECIMAL,
+    defaultValue: 0.9,
     allowNull: true,  //cho phép giá trị có thể null
   }
 }, {

@@ -1,5 +1,7 @@
 import { Router } from "express";
-import {createCourses, getAllCourse, getthumbailCourse, updateCoursebyIdCouses, getAllCourseByStatus, getALLCourseByIdgetLessonandGV} from "../controllers/coursesController"
+import {createCourses, getAllCourse, getthumbailCourse, updateCoursebyIdCouses, getAllCourseByStatus, getALLCourseByIdgetLessonandGV,
+    getALLLessonandQuizzbyIdcousechild, getAllCourseByStatusNoibat, getAllCourseByStatusNewhot, getAllCourseByStatusIfquery
+} from "../controllers/coursesController"
 import {uplaodFileThumbailCourses, uploadFile} from "../middlewares/index"
 const router = Router();
 
@@ -19,6 +21,18 @@ router.put('/updatecourse/:id', updateCoursebyIdCouses);
 router.get('/getcoursestatus', getAllCourseByStatus);
 
 //Lấy thông tin khóa học và tất cả bài giảng và giảng viên cho người dùng xem
-router.get('/getinfolessongvforcourse/:idcourse/:idGV', getALLCourseByIdgetLessonandGV)
+router.get('/getinfolessongvforcourse/:idcourse/:idGV', getALLCourseByIdgetLessonandGV);
+
+//lấy danh sách toàn bộ bài giảng câu hỏi cho người dùng
+router.get('/getcoursealllessonquizzhocvien/:idcourse', getALLLessonandQuizzbyIdcousechild);
+
+//lấy danh sách khóa học nổi bật tổi đa là 6 cái
+router.get('/getcoursenoibat', getAllCourseByStatusNoibat)
+
+//lấy danh sách khóa học mới nhất
+router.get('/getcoursenewhot', getAllCourseByStatusNewhot)
+
+//lọc dữ liệu điệu kiện lĩnh vực và giá
+router.post('/coursedanhmucprice', getAllCourseByStatusIfquery)
 
 export default router;

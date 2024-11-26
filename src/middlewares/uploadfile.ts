@@ -74,5 +74,87 @@ const uploadFile= multer({
                 },
             })
  })
+ async function clearDirectory(directoryPath:any) {
+    try {
+        // Kiểm tra xem thư mục có tồn tại hay không
+        const files = await fs.readdirSync(directoryPath);
 
-export {uploadFile, uplaodFileThumbailCourses};
+        // Nếu có file, tiến hành xóa từng file
+        if (files.length > 0) {
+            for (const file of files) {
+                const filePath = path.join(directoryPath, file);
+                await fs.unlinkSync(filePath); // Xóa file
+            }
+            console.log('Đã xóa toàn bộ file trong thư mục.');
+        } else {
+            console.log('Thư mục không chứa file nào.');
+        }
+    } catch (error) {
+        console.error('Lỗi khi xóa file:', error);
+    }
+}
+ //Cấu hình uploadfile cho hình ảnh đoạn chat
+ const uploadfilehinhChatCourseUser = multer({
+    storage: multer.diskStorage({
+                destination: async (req, file, cb) =>{
+                    const upLoadPathFile = path.join(__dirname, '../../storage/chatcourseuser/Image');
+
+                    //Xóa các file cũ và tạo một file mới tránh lưu liên tục đầy bộ nhớ
+
+                    // tạo thư mục nếu chưa tồn tại 
+                    if(!fs.existsSync(upLoadPathFile)){
+                        fs.mkdirSync(upLoadPathFile, {recursive: true}); // Tạo thư mục nếu chưa tồn tại
+                    }
+                    cb(null, upLoadPathFile);
+                },
+                filename: (req, file, cb) => {
+                    const tenfile = Date.now() + path.extname(file.originalname);
+                    req.body.filename = tenfile; //lấy tên file
+                    cb(null, tenfile); // Đặt tên file theo timestamp
+                },
+            })
+ })
+//Cấu hình upload cho hình đại diện của người dùng
+const uploadfilehinhdaidiennguoidung = multer({
+    storage: multer.diskStorage({
+                destination: async (req, file, cb) =>{
+                    const {userid} = req.body;
+                    console.log(userid);
+                    const upLoadPathFile = path.join(__dirname, `../../storage/nguoidung/${userid}`);
+                    // tạo thư mục nếu chưa tồn tại 
+                    if(!fs.existsSync(upLoadPathFile)){
+                        fs.mkdirSync(upLoadPathFile, {recursive: true}); // Tạo thư mục nếu chưa tồn tại
+                    }
+                    cb(null, upLoadPathFile);
+                },
+                filename: (req, file, cb) => {
+                    const tenfile = Date.now() + path.extname(file.originalname);
+                    req.body.filename = tenfile; //lấy tên file
+                    cb(null, tenfile); // Đặt tên file theo timestamp
+                },
+            })
+ });
+ //Cấu hình uploadfile đánh giá 
+ const uploadfilehinhanhdanhgia = multer({
+    storage: multer.diskStorage({
+                destination: async (req, file, cb) =>{
+                    const {idenrollment} = req.body;
+                    console.log(idenrollment);
+                    const upLoadPathFile = path.join(__dirname, `../../storage/reviews/${idenrollment}`);
+                    // tạo thư mục nếu chưa tồn tại 
+                    if(!fs.existsSync(upLoadPathFile)){
+                        fs.mkdirSync(upLoadPathFile, {recursive: true}); // Tạo thư mục nếu chưa tồn tại
+                    }
+                    cb(null, upLoadPathFile);
+                },
+                filename: (req, file, cb) => {
+                    const tenfile = Date.now() + path.extname(file.originalname);
+                    req.body.filename = tenfile; //lấy tên file
+                    cb(null, tenfile); // Đặt tên file theo timestamp
+                },
+            })
+ });
+const uploadfileInfoGV = multer();
+export {uploadFile, uplaodFileThumbailCourses, uploadfilehinhChatCourseUser, uploadfilehinhdaidiennguoidung, uploadfileInfoGV, 
+    uploadfilehinhanhdanhgia
+};

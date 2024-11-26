@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt'
 import {User, UserDetails} from '../models/indextModel'
 import { getAccessToken } from "../utils/getAccesstoken";
 import path from "path";
+import { Op, Sequelize } from "sequelize";
 const dangkyGiangvien = async (req:Request, res:Response)=>{
     const {name, email, password, uploadPath} = req.body;
     try{
@@ -79,6 +80,8 @@ const dangnhap = async (req:Request, res:Response)=>{
             id: user.id,
             email: user.email,
             role: user.role,
+            name: user.name,//31/10/2024 2:08
+            avatar: user.avatar,//31/10/2024 2:08
         })
     })
 }
@@ -103,6 +106,158 @@ const updateStatusGV = async (req:Request, res:Response) => {
     }catch(err) {res.status(400).json({error: err})}
 }
 
+const updateuserNguoidung = async (req: Request, res: Response) => {
+    const {userid,name, filename} = req.body;
+    console.log(filename);
+    try{
+        //lấy ra id người dùng cần update
+        const user = await User.update(
+            {
+                name: name,
+                avatar: filename
+            },
+            {where: {id: userid}}
+        )
+        res.status(200).json(user);
+    }catch(err){res.status(400).json({err: err});}
+}
+const getAvatarnguoidung = async(req: Request, res: Response) => {
+    res.set('cross-origin-resource-policy', 'cross-origin');//cho phép từ các nguồn khác
+    const {userid, filename} = req.params;
+    const filepath = path.join(__dirname, `../../storage/nguoidung/${userid}/${filename}`);
+    res.sendFile(filepath,(err)=>{
+        if(err){
+            console.error('Error sending file:', err);
+            return res.status(404).send('File not found');
+        }
+    })
+}
+//Cập nhật thông tin giảng viên
+const updateuseruserdetailsGV = async(req: Request, res: Response)=>{
+    const {userid, name, capbac, nganhang, diachi, sdt, cccd, linhvuc, truonghoc, kinhnghiem, chamngonsong, sotaikhoan} = req.body;
+    const user = await User.findOne({where: {id: userid}});
+    if(user!==null){
+        // nếu tồn tại thì mới cập nhật
+        await User.update(
+            {
+                name: name
+            },
+            {where: {id: userid}}
+        )
+        await UserDetails.update(
+            {
+                capbac: capbac,
+                nganhang: nganhang,
+                diachi: diachi,
+                sdt: sdt,
+                cccd: cccd,
+                linhvuc: linhvuc,
+                truonghoc: truonghoc,
+                kinhnghiem: kinhnghiem,
+                chamngonsong: chamngonsong,
+                sotaikhoan: sotaikhoan
+            },
+            {where: {userid: userid}}
+        )
+        return res.status(200).json({message: 'Cập nhật thành công'})
+    }
+    return res.status(404).json({message: 'User not found'})
+}
 
-
-export  {dangkyGiangvien, dangkyNguoiDung,dangnhap, checkUserStatusGV, updateStatusGV}
+//Lấy thông tin của giảng viên
+const getInfoGV = async(req:Request, res:Response) => {
+    const {userid} = req.body;
+    try{
+        const user = await User.findOne({where: {id: userid}});
+        if(user!==null){
+            const userinfo = user.toJSON();
+            const userDetails = (await UserDetails.findOne({where: {userid: userid}}))?.toJSON();
+            return res.status(200).json({...userinfo, ...userDetails})
+        }
+        return res.status(404).json({message: 'User not found'})
+    }catch(err){return res.status(500).json({err:err})}
+}
+//hằng gộp dữ liệu
+interface UserData {
+    createdDate: string;
+    totalUsers: string; // Chuỗi vì dữ liệu từ API có thể ở dạng này
+  }
+  
+  interface MergedData {
+    date: string;
+    sinhvien: number;
+    giangvien: number;
+  }
+  
+  const mergeData = (dataHocvien: UserData[], datagiangvien: UserData[]): MergedData[] => {
+    // Tạo một map để lưu trữ dữ liệu gộp
+    const mergedData: Record<string, MergedData> = {};
+  
+    // Duyệt qua danh sách sinh viên (dataHocvien)
+    dataHocvien.forEach(({ createdDate, totalUsers }) => {
+      if (!mergedData[createdDate]) {
+        mergedData[createdDate] = { date: createdDate, sinhvien: 0, giangvien: 0 };
+      }
+      mergedData[createdDate].sinhvien += parseInt(totalUsers, 10); // Cộng số lượng sinh viên
+    });
+  
+    // Duyệt qua danh sách giảng viên (datagiangvien)
+    datagiangvien.forEach(({ createdDate, totalUsers }) => {
+      if (!mergedData[createdDate]) {
+        mergedData[createdDate] = { date: createdDate, sinhvien: 0, giangvien: 0 };
+      }
+      mergedData[createdDate].giangvien += parseInt(totalUsers, 10); // Cộng số lượng giảng viên
+    });
+  
+    // Chuyển map thành array để sử dụng
+    return Object.values(mergedData);
+  };
+  
+//lấy thống kê học viên và giáo viên
+const thongkehocvien = async (req: Request, res: Response) => {
+    const {month, year} = req.body;
+    const startDate = new Date(year, month - 1, 1); // Ngày đầu tháng
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Ngày cuối tháng
+    try{
+        // Group theo ngày tạo
+const dataHocvien = await User.findAll({
+    attributes: [
+      [Sequelize.fn('DATE', Sequelize.col('createdAt')), 'createdDate'],
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalUsers'], // Đếm số lượng user mỗi ngày
+    ],
+    where: {
+      createdAt: { [Op.between]: [startDate, endDate] },
+      role: 'nguoidung',
+    },
+    group: ['createdDate'], // Group theo ngày
+    raw: true, // Kết quả ở dạng JSON thuần
+  });
+  const datagiangvien = await User.findAll({
+    attributes: [
+      [Sequelize.fn('DATE', Sequelize.col('createdAt')), 'createdDate'],
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalUsers'], // Đếm số lượng user mỗi ngày
+    ],
+    where: {
+      createdAt: { [Op.between]: [startDate, endDate] },
+      role: 'giangvien',
+    },
+    group: ['createdDate'], // Group theo ngày
+    raw: true, // Kết quả ở dạng JSON thuần
+  });
+  //ép kiểu
+  const datagiangvienAsUserData: UserData[] = datagiangvien.map((user:any)=> ({
+    createdDate: user.createdDate,
+    totalUsers: user.totalUsers,
+  }));
+  //ép kiểu
+  const datanguoidungAsUserData: UserData[] = dataHocvien.map((user:any)=> ({
+    createdDate: user.createdDate,
+    totalUsers: user.totalUsers,
+  }));
+  const mergedData = mergeData(datagiangvienAsUserData, datanguoidungAsUserData);
+        return res.status(200).json(mergedData);
+    }catch(err){return res.status(500).json({err:err})}
+}
+export  {dangkyGiangvien, dangkyNguoiDung,dangnhap, checkUserStatusGV, updateStatusGV, updateuserNguoidung, getAvatarnguoidung, updateuseruserdetailsGV, getInfoGV,
+    thongkehocvien
+}

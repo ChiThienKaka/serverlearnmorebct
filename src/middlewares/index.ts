@@ -1,6 +1,5 @@
 import authenticateToken from "./authenticatoken";
-import {uplaodFileThumbailCourses, uploadFile} from "./uploadfile";
+import {uplaodFileThumbailCourses, uploadFile, uploadfilehinhdaidiennguoidung, uploadfileInfoGV} from "./uploadfile";
 import uploadFileLesson from './uploadfileLesson'
-
-
-export {authenticateToken, uploadFile, uplaodFileThumbailCourses, uploadFileLesson}
+import uploadFileLessonChild from "./uploadfilelessonchild";
+export {authenticateToken, uploadFile, uplaodFileThumbailCourses, uploadFileLesson, uploadFileLessonChild, uploadfilehinhdaidiennguoidung, uploadfileInfoGV}

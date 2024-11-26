@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express"
-import {User, UserDetails, Courses} from "../models/indextModel"
+import {User, UserDetails, Courses, Payment} from "../models/indextModel"
 import path from "path";
-import fs from 'fs'
-import { where } from "sequelize";
+import fs from 'fs';
+import { Op, Sequelize } from "sequelize";
 
 const duyetgiangvien = async (req:Request, res:Response, next:NextFunction)=>{
     try{
@@ -109,6 +109,86 @@ const getALLCourseAndGiangVien = async (req:Request, res:Response) => {
         res.status(500).json({data:'error'});
     }
 }
+//lấy danh sách toàn bộ giảng viên
+const getAllGiangVienInfo = async (req: Request, res: Response)=> {
+    try{
+        const user = (await User.findAll({where: {role: 'giangvien'}})).map(item=>item.toJSON());
+        const userall = await Promise.all(
+            user.map(async(item)=>{
+                const userdetails =(await UserDetails.findOne({where: {userid: item.id}}))?.toJSON();
+                return {...item,key:item.id, userdetails: userdetails}
+            })
+        )
+        return res.status(200).json(userall)
+    }catch(err){
+        return res.status(500).json({err: err})
+    }
+}
+//lấy danh sách thông tin người dùng 
+const getInfoNguoidung = async (req: Request, res: Response)=> {
+    try{
+        const user = (await User.findAll({where: {role: 'nguoidung'}, raw: true})).map((item)=>{
+            return {...item, key: item.id}
+        });
+        return res.status(200).json(user);
+    }catch(err){
+        return res.status(500).json({err: err})
+    }
+}
 
+//thống kê khóa học
+const thongkekhoahoc = async (req: Request, res: Response)=> {
+    const {month, year} = req.body;
+    const startDate = new Date(year, month - 1, 1); // Ngày đầu tháng
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Ngày cuối tháng
+    try{
+       const dataCourse = await Courses.findAll({
+        attributes: [
+            [Sequelize.fn('DATE', Sequelize.col('createdAt')), 'createdDate'],
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCourse'], // Đếm số lượng user mỗi ngày
+          ],
+        where: {
+            createdAt: { [Op.between]: [startDate, endDate] },
+            status: true
+        },
+        group: ['createdDate'], // Group theo ngày
+        // order: [[Sequelize.literal('totalCourse'), 'DESC']],
+        raw: true, // Kết quả ở dạng JSON thuần
+       })
+       const dataCourseall = dataCourse.map((item:any)=>{
+            return {createdDate: item.createdDate, totalCourse: Number(item.totalCourse)}
+       })
+       return res.status(200).json(dataCourseall);
+    }catch(err){
+        return res.status(500).json({err: err})
+    }
+}
 
-export {duyetgiangvien, getavatar, getChungchivanbang, getChungchicuthe, getALLCourseAndGiangVien};
+const thongkedoanhthu = async (req: Request, res: Response) => {
+    const {month, year} = req.body;
+    const startDate = new Date(year, month - 1, 1); // Ngày đầu tháng
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Ngày cuối tháng
+    try{
+        const payment = await Payment.findAll({
+            attributes: [
+                [Sequelize.fn('DATE', Sequelize.col('paymentdate')), 'createdDate'],
+                [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalCourse'], //  Tổng tiền
+              ],
+            where: {
+                paymentdate: { [Op.between]: [startDate, endDate] },
+            },
+            group: ['createdDate'], // Group theo ngày
+            // order: [[Sequelize.literal('totalCourse'), 'DESC']],
+            raw: true, // Kết quả ở dạng JSON thuần
+        });
+        const paymentall = payment.map((item:any)=>{
+            return {createdDate: item.createdDate, totalCourse: Number(item.totalCourse)}
+       })
+        return res.status(200).json(paymentall)
+    }catch(err){
+        return res.status(500).json({err: err})
+    }
+}
+export {duyetgiangvien, getavatar, getChungchivanbang, getChungchicuthe, getALLCourseAndGiangVien, getAllGiangVienInfo, getInfoNguoidung,
+    thongkekhoahoc, thongkedoanhthu
+};

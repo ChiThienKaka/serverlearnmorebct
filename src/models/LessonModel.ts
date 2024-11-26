@@ -6,12 +6,8 @@ class Lesson extends Model {
   public courseid?: number;
   public title?: string;
   public content?: string;
-  public videourl?: string;
-  public tailieu?: string;
   public order?: number;
-  public filevideo?: string;
-  public image?: string;
-
+  public trylearn?: boolean;//học thử
 }
 //nếu không đặt khóa chính nó sẽ tự sinh id
 Lesson.init({
@@ -32,28 +28,18 @@ Lesson.init({
     type: DataTypes.TEXT,
     allowNull: true,//cho phép giá trị có thể null
   },
-  videourl: {
-    type: DataTypes.STRING,
-    allowNull: true,//cho phép giá trị có thể null
-  },
   order: {
-    type: DataTypes.STRING,
-    allowNull: true,//cho phép giá trị có thể null
-  },
-  tailieu: {
-    type: DataTypes.STRING,
-    allowNull: true,//cho phép giá trị có thể null
-  },
-  filevideo: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
+    defaultValue: 1,
     allowNull: true,//cho phép giá trị có thể null
   },
   lessonid:{
     type: DataTypes.STRING,
     allowNull: true,
   },
-  image:{
-    type: DataTypes.STRING,
+  trylearn: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
     allowNull: true,  //cho phép giá trị có thể null
   }
 }, {

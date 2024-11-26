@@ -26,4 +26,15 @@ const danhsachalldanhmuc = async (req:Request, res: Response) =>{
     }
     res.status(500).json({data: "Error"});
 }
-export {danhsachcategori, danhsachalldanhmuc};
+//lọc theo dạng cây
+const danhsachcay = async (req: Request, res: Response) => {
+    const categori = (await Categories.findAll()).map(item=>item.toJSON());
+    const categorichild = await Promise.all(
+        categori.map(async(item)=>{
+            const child = await CategoriesChild.findAll({where: {parentid : item.id}});
+            return {...item, child: child}
+        })
+    )
+    return res.status(200).json(categorichild);
+}
+export {danhsachcategori, danhsachalldanhmuc, danhsachcay};
